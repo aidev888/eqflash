@@ -1,4 +1,4 @@
-#include "setup.h"
+#include "efi_pe.h"
 
 OUTPUT_FORMAT("elf64-x86-64", "elf64-x86-64",
               "elf64-x86-64")
@@ -7,13 +7,13 @@ ENTRY(efi_pe_entry)
 
 SECTIONS
 {
-	. = EFI_SALIGN;
+	. = EFI_PE_SALIGN;
 
 	.interp         : { *(.interp) }
 	ASSERT(SIZEOF(.interp) == 0, "Unexpected interpreter detected, recompile with -static-pie -Wl,--no-dynamic-linker !")
 
 	/* We put .rodata into .text */
-	.text ALIGN(EFI_SALIGN) : {
+	.text ALIGN(EFI_PE_SALIGN) : {
 		*(.text.unlikely .text.*_unlikely .text.unlikely.*)
 		*(.text.exit .text.exit.*)
 		*(.text.startup .text.startup.*)
@@ -22,43 +22,45 @@ SECTIONS
 		*(.text .text.*)
 		*(.rodata .rodata.*)
 	}
-	ASSERT(ADDR(.text) == EFI_SALIGN, "Unexpected sections detected!")
+	ASSERT(ADDR(.text) == EFI_PE_SALIGN, "Unexpected sections detected!")
 
-	.data ALIGN(EFI_SALIGN) : {
+	.data ALIGN(EFI_PE_SALIGN) : {
 		*(.data .data.*)
 	}
 
-	.bss ALIGN(EFI_SALIGN) : {
+	.bss ALIGN(EFI_PE_SALIGN) : {
 		*(.bss .bss.*)
 		*(COMMON)
 	}
 
-	. = ALIGN(EFI_SALIGN);
-	PROVIDE(_efi_virtual_end = .);
+	. = ALIGN(EFI_PE_SALIGN);
+	PROVIDE(_efi_pe_virtual_end = .);
 
-	.efi_header : {
-		*(.efi_header0)
-		LONG(ALIGN(SIZEOF(.text), EFI_FALIGN))
-		LONG(ALIGN(SIZEOF(.data), EFI_FALIGN))
-		LONG(ALIGN(SIZEOF(.bss), EFI_FALIGN))
+	.efi_pe_header : {
+		KEEP(*(.efi_pe_header0))
+		LONG(ALIGN(SIZEOF(.text), EFI_PE_FALIGN))
+		LONG(ALIGN(SIZEOF(.data), EFI_PE_FALIGN))
+		LONG(ALIGN(SIZEOF(.bss), EFI_PE_FALIGN))
 		LONG(efi_pe_entry)
 		LONG(ADDR(.text))
-		*(.efi_header1)
-		LONG(_efi_virtual_end)
-		*(.efi_header2)
+		KEEP(*(.efi_pe_header1))
+		LONG(_efi_pe_virtual_end)
+		KEEP(*(.efi_pe_header2))
 		LONG(SIZEOF(.text))
 		LONG(ADDR(.text))
-		LONG(ALIGN(SIZEOF(.text), EFI_FALIGN))
-		*(.efi_header3)
+		LONG(ALIGN(SIZEOF(.text), EFI_PE_FALIGN))
+		KEEP(*(.efi_pe_header3))
 		LONG(SIZEOF(.data))
 		LONG(ADDR(.data))
-		LONG(ALIGN(SIZEOF(.data), EFI_FALIGN))
-		LONG(EFI_HEADER_SIZE + ALIGN(SIZEOF(.text), EFI_FALIGN))
-		*(.efi_header4)
+		LONG(ALIGN(SIZEOF(.data), EFI_PE_FALIGN))
+		LONG(EFI_PE_HEADER_SIZE + ALIGN(SIZEOF(.text), EFI_PE_FALIGN))
+		KEEP(*(.efi_pe_header4))
 		LONG(SIZEOF(.bss))
 		LONG(ADDR(.bss))
-		*(.efi_header5)
+		KEEP(*(.efi_pe_header5))
+		. = ALIGN(EFI_PE_FALIGN);
 	}
+	ASSERT(SIZEOF(.efi_pe_header) == EFI_PE_HEADER_SIZE, "efi pe header too large!")
 
 	.note.gnu.build-id  : { *(.note.gnu.build-id) }
 	.hash           : { *(.hash) }

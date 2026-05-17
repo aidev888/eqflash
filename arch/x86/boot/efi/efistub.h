@@ -10,6 +10,9 @@
 typedef union efi_dxe_services_table efi_dxe_services_table_t;
 extern const efi_dxe_services_table_t *efi_dxe_table;
 
+efi_status_t __efiapi efi_pe_entry(efi_handle_t handle,
+				   efi_system_table_t *sys_table_arg);
+
 #define efi_is_native()			(true)
 #define efi_table_attr(inst, attr)	(inst)->attr
 #define efi_fn_call(inst, func, ...)	(inst)->func(__VA_ARGS__)
@@ -57,6 +60,9 @@ typedef enum {
 	EfiTimerRelative
 } EFI_TIMER_DELAY;
 
+/*
+ * EFI Boot Services table
+ */
 union efi_boot_services {
 	struct {
 		efi_table_hdr_t hdr;
@@ -156,6 +162,9 @@ typedef struct {
 	void *device_handle;
 } efi_gcd_memory_space_desc_t;
 
+/*
+ * EFI DXE Services table
+ */
 union efi_dxe_services_table {
 	struct {
 		efi_table_hdr_t hdr;

@@ -14,9 +14,9 @@
  *	David Mosberger-Tang <davidm@hpl.hp.com>
  *	Stephane Eranian <eranian@hpl.hp.com>
  */
+#include <linux/string.h>
 #include <linux/types.h>
 #include <linux/uuid.h>
-#include <linux/string.h>
 
 struct screen_info;
 
