@@ -1,3 +1,5 @@
+// full copy
+
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __LINUX_COMPILER_TYPES_H
 #error "Please do not include <linux/compiler-gcc.h> directly, include <linux/compiler.h> instead."
@@ -35,16 +37,8 @@
 	(typeof(ptr)) (__ptr + (off));					\
 })
 
-#if 0 // TODO
-#ifdef CONFIG_MITIGATION_RETPOLINE
-#define __noretpoline __attribute__((__indirect_branch__("keep")))
-#endif
-#endif
-
-#if 0 // TODO
 #if defined(LATENT_ENTROPY_PLUGIN) && !defined(__CHECKER__)
 #define __latent_entropy __attribute__((latent_entropy))
-#endif
 #endif
 
 /*
@@ -70,7 +64,9 @@
 #define KASAN_ABI_VERSION 4
 #endif
 
+#ifdef CONFIG_SHADOW_CALL_STACK
 #define __noscs __attribute__((__no_sanitize__("shadow-call-stack")))
+#endif
 
 #ifdef __SANITIZE_HWADDRESS__
 #define __no_sanitize_address __attribute__((__no_sanitize__("hwaddress")))
@@ -89,7 +85,7 @@
 /*
  * Only supported since gcc >= 12
  */
-#if __has_attribute(__no_sanitize_coverage__)
+#if defined(CONFIG_KCOV) && __has_attribute(__no_sanitize_coverage__)
 #define __no_sanitize_coverage __attribute__((__no_sanitize_coverage__))
 #else
 #define __no_sanitize_coverage
@@ -152,4 +148,14 @@
  */
 #define CC_HAS_TYPEOF_UNQUAL (__GNUC__ >= 14)
 
-#define __inline_maybe_unused
+#if GCC_VERSION >= 130100
+#define CONFIG_CC_HAS_ASSUME 1
+#endif
+
+#if GCC_VERSION >= 150100
+#define CONFIG_CC_HAS_COUNTED_BY 1
+#endif
+
+#if GCC_VERSION >= 160000
+#define CONFIG_CC_HAS_COUNTED_BY_PTR 1
+#endif

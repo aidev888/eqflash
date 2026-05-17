@@ -1,3 +1,5 @@
+// part copy
+
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_EFI_H
 #define _LINUX_EFI_H
@@ -14,6 +16,7 @@
  */
 #include <linux/types.h>
 #include <linux/uuid.h>
+#include <linux/string.h>
 
 struct screen_info;
 
@@ -39,10 +42,10 @@ typedef u16 efi_char16_t;		/* UNICODE character */
 typedef u64 efi_physical_addr_t;
 typedef void *efi_handle_t;
 
-#if defined(CONFIG_X86_64)
+#if defined(__x86_64__)
 #define __efiapi __attribute__((ms_abi))
 #else
-#error "Not support"
+#error "TODO"
 #endif
 
 /*
@@ -185,15 +188,6 @@ struct efi_image_auth {
 };
 
 /*
- * EFI capsule flags
- */
-#define EFI_CAPSULE_PERSIST_ACROSS_RESET	0x00010000
-#define EFI_CAPSULE_POPULATE_SYSTEM_TABLE	0x00020000
-#define EFI_CAPSULE_INITIATE_RESET		0x00040000
-
-
-
-/*
  * Types and defines for Time Services
  */
 #define EFI_TIME_ADJUST_DAYLIGHT 0x1
@@ -235,24 +229,6 @@ typedef union efi_boot_services efi_boot_services_t;
 #define EFI_RUNTIME_SERVICES_SIGNATURE ((u64)0x5652453544e5552ULL)
 #define EFI_RUNTIME_SERVICES_REVISION  0x00010000
 
-typedef struct {
-	efi_table_hdr_t hdr;
-	u32 get_time;
-	u32 set_time;
-	u32 get_wakeup_time;
-	u32 set_wakeup_time;
-	u32 set_virtual_address_map;
-	u32 convert_pointer;
-	u32 get_variable;
-	u32 get_next_variable;
-	u32 set_variable;
-	u32 get_next_high_mono_count;
-	u32 reset_system;
-	u32 update_capsule;
-	u32 query_capsule_caps;
-	u32 query_variable_info;
-} efi_runtime_services_32_t;
-
 typedef efi_status_t efi_get_time_t (efi_time_t *tm, efi_time_cap_t *tc);
 typedef efi_status_t efi_set_time_t (efi_time_t *tm);
 typedef efi_status_t efi_get_wakeup_time_t (efi_bool_t *enabled, efi_bool_t *pending,
@@ -262,7 +238,7 @@ typedef efi_status_t efi_get_variable_t (efi_char16_t *name, efi_guid_t *vendor,
 					 unsigned long *data_size, void *data);
 typedef efi_status_t efi_get_next_variable_t (unsigned long *name_size, efi_char16_t *name,
 					      efi_guid_t *vendor);
-typedef efi_status_t efi_set_variable_t (efi_char16_t *name, efi_guid_t *vendor, 
+typedef efi_status_t efi_set_variable_t (efi_char16_t *name, efi_guid_t *vendor,
 					 u32 attr, unsigned long data_size,
 					 void *data);
 typedef efi_status_t efi_get_next_high_mono_count_t (u32 *count);
@@ -305,10 +281,7 @@ typedef union {
 		efi_query_capsule_caps_t __efiapi	*query_capsule_caps;
 		efi_query_variable_info_t __efiapi	*query_variable_info;
 	};
-	efi_runtime_services_32_t mixed_mode;
 } efi_runtime_services_t;
-
-void efi_native_runtime_setup(void);
 
 /*
  * EFI Configuration Table and GUID definitions
@@ -345,6 +318,8 @@ void efi_native_runtime_setup(void);
 #define EFI_DEVICE_PATH_TO_TEXT_PROTOCOL_GUID	EFI_GUID(0x8b843e20, 0x8132, 0x4852,  0x90, 0xcc, 0x55, 0x1a, 0x4e, 0x4a, 0x7f, 0x1c)
 #define EFI_DEVICE_PATH_FROM_TEXT_PROTOCOL_GUID	EFI_GUID(0x05c99a21, 0xc70f, 0x4ad2,  0x8a, 0x5f, 0x35, 0xdf, 0x33, 0x43, 0xf5, 0x1e)
 #define EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID	EFI_GUID(0x9042a9de, 0x23dc, 0x4a38,  0x96, 0xfb, 0x7a, 0xde, 0xd0, 0x80, 0x51, 0x6a)
+#define EFI_EDID_DISCOVERED_PROTOCOL_GUID	EFI_GUID(0x1c0c34f6, 0xd380, 0x41fa,  0xa0, 0x49, 0x8a, 0xd0, 0x6c, 0x1a, 0x66, 0xaa)
+#define EFI_EDID_ACTIVE_PROTOCOL_GUID		EFI_GUID(0xbd8c1056, 0x9f36, 0x44ec,  0x92, 0xa8, 0xa6, 0x33, 0x7f, 0x81, 0x79, 0x86)
 #define EFI_PCI_IO_PROTOCOL_GUID		EFI_GUID(0x4cf5b200, 0x68b8, 0x4ca5,  0x9e, 0xec, 0xb2, 0x3e, 0x3f, 0x50, 0x02, 0x9a)
 #define EFI_FILE_INFO_ID			EFI_GUID(0x09576e92, 0x6d3f, 0x11d2,  0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
 #define EFI_SYSTEM_RESOURCE_TABLE_GUID		EFI_GUID(0xb122a263, 0x3661, 0x4f68,  0x99, 0x29, 0x78, 0xf8, 0xb0, 0xd6, 0x21, 0x80)
@@ -376,11 +351,12 @@ void efi_native_runtime_setup(void);
 #define EFI_CC_FINAL_EVENTS_TABLE_GUID		EFI_GUID(0xdd4a4648, 0x2de7, 0x4665, 0x96, 0x4d, 0x21, 0xd9, 0xef, 0x5f, 0xb4, 0x46)
 
 /*
- * This GUID is used to pass to the kernel proper the struct screen_info
- * structure that was populated by the stub based on the GOP protocol instance
- * associated with ConOut
+ * This GUIDs are used to pass to the kernel proper the primary
+ * display that has been populated by the stub based on the GOP
+ * instance associated with ConOut.
  */
-#define LINUX_EFI_SCREEN_INFO_TABLE_GUID	EFI_GUID(0xe03fc20a, 0x85dc, 0x406e,  0xb9, 0x0e, 0x4a, 0xb5, 0x02, 0x37, 0x1d, 0x95)
+#define LINUX_EFI_PRIMARY_DISPLAY_TABLE_GUID	EFI_GUID(0xe03fc20a, 0x85dc, 0x406e,  0xb9, 0x0e, 0x4a, 0xb5, 0x02, 0x37, 0x1d, 0x95)
+
 #define LINUX_EFI_ARM_CPU_STATE_TABLE_GUID	EFI_GUID(0xef79e4aa, 0x3c3d, 0x4989,  0xb9, 0x02, 0x07, 0xa9, 0x43, 0xe5, 0x50, 0xd2)
 #define LINUX_EFI_LOADER_ENTRY_GUID		EFI_GUID(0x4a67b082, 0x0a4c, 0x41cf,  0xb6, 0xc7, 0x44, 0x0b, 0x29, 0xbb, 0x8c, 0x4f)
 #define LINUX_EFI_RANDOM_SEED_TABLE_GUID	EFI_GUID(0x1ce1e5bc, 0x7ceb, 0x42f2,  0x81, 0xe5, 0x8a, 0xad, 0xf1, 0x80, 0xf5, 0x7b)
@@ -503,389 +479,10 @@ typedef union {
 	efi_system_table_32_t mixed_mode;
 } efi_system_table_t;
 
-struct efi_boot_memmap {
-	unsigned long		map_size;
-	unsigned long		desc_size;
-	u32			desc_ver;
-	unsigned long		map_key;
-	unsigned long		buff_size;
-	efi_memory_desc_t	map[];
-};
+static inline int
+efi_guidcmp (efi_guid_t left, efi_guid_t right)
+{
+	return memcmp(&left, &right, sizeof (efi_guid_t));
+}
 
-struct efi_unaccepted_memory {
-	u32 version;
-	u32 unit_size;
-	u64 phys_base;
-	u64 size;
-	unsigned long bitmap[];
-};
-
-typedef struct {
-	u16 version;
-	u16 length;
-	u32 runtime_services_supported;
-} efi_rt_properties_table_t;
-
-#define EFI_RT_PROPERTIES_TABLE_VERSION	0x1
-
-#define EFI_INVALID_TABLE_ADDR		(~0UL)
-
-// BIT0 implies that Runtime code includes the forward control flow guard
-// instruction, such as X86 CET-IBT or ARM BTI.
-#define EFI_MEMORY_ATTRIBUTES_FLAGS_RT_FORWARD_CONTROL_FLOW_GUARD	0x1
-
-typedef struct {
-	u32 version;
-	u32 num_entries;
-	u32 desc_size;
-	u32 flags;
-	/*
-	 * There are @num_entries following, each of size @desc_size bytes,
-	 * including an efi_memory_desc_t header. See efi_memdesc_ptr().
-	 */
-	efi_memory_desc_t entry[];
-} efi_memory_attributes_table_t;
-
-typedef struct {
-	efi_guid_t signature_owner;
-	u8 signature_data[];
-} efi_signature_data_t;
-
-typedef struct {
-	efi_guid_t signature_type;
-	u32 signature_list_size;
-	u32 signature_header_size;
-	u32 signature_size;
-	u8 signature_header[];
-	/* efi_signature_data_t signatures[][] */
-} efi_signature_list_t;
-
-typedef u8 efi_sha256_hash_t[32];
-
-typedef struct {
-	efi_sha256_hash_t to_be_signed_hash;
-	efi_time_t time_of_revocation;
-} efi_cert_x509_sha256_t;
-
-#define EFI_RT_SUPPORTED_GET_TIME				0x0001
-#define EFI_RT_SUPPORTED_SET_TIME				0x0002
-#define EFI_RT_SUPPORTED_GET_WAKEUP_TIME			0x0004
-#define EFI_RT_SUPPORTED_SET_WAKEUP_TIME			0x0008
-#define EFI_RT_SUPPORTED_GET_VARIABLE				0x0010
-#define EFI_RT_SUPPORTED_GET_NEXT_VARIABLE_NAME			0x0020
-#define EFI_RT_SUPPORTED_SET_VARIABLE				0x0040
-#define EFI_RT_SUPPORTED_SET_VIRTUAL_ADDRESS_MAP		0x0080
-#define EFI_RT_SUPPORTED_CONVERT_POINTER			0x0100
-#define EFI_RT_SUPPORTED_GET_NEXT_HIGH_MONOTONIC_COUNT		0x0200
-#define EFI_RT_SUPPORTED_RESET_SYSTEM				0x0400
-#define EFI_RT_SUPPORTED_UPDATE_CAPSULE				0x0800
-#define EFI_RT_SUPPORTED_QUERY_CAPSULE_CAPABILITIES		0x1000
-#define EFI_RT_SUPPORTED_QUERY_VARIABLE_INFO			0x2000
-
-#define EFI_RT_SUPPORTED_ALL					0x3fff
-
-#define EFI_RT_SUPPORTED_TIME_SERVICES				0x0003
-#define EFI_RT_SUPPORTED_WAKEUP_SERVICES			0x000c
-#define EFI_RT_SUPPORTED_VARIABLE_SERVICES			0x0070
-
-
-/*
- * efi_memdesc_ptr - get the n-th EFI memmap descriptor
- * @map: the start of efi memmap
- * @desc_size: the size of space for each EFI memmap descriptor
- * @n: the index of efi memmap descriptor
- *
- * EFI boot service provides the GetMemoryMap() function to get a copy of the
- * current memory map which is an array of memory descriptors, each of
- * which describes a contiguous block of memory. It also gets the size of the
- * map, and the size of each descriptor, etc.
- *
- * Note that per section 6.2 of UEFI Spec 2.6 Errata A, the returned size of
- * each descriptor might not be equal to sizeof(efi_memory_memdesc_t),
- * since efi_memory_memdesc_t may be extended in the future. Thus the OS
- * MUST use the returned size of the descriptor to find the start of each
- * efi_memory_memdesc_t in the memory map array. This should only be used
- * during bootup since for_each_efi_memory_desc_xxx() is available after the
- * kernel initializes the EFI subsystem to set up struct efi_memory_map.
- */
-#define efi_memdesc_ptr(map, desc_size, n)			\
-	(efi_memory_desc_t *)((void *)(map) + ((n) * (desc_size)))
-
-/* Iterate through an efi_memory_map */
-#define for_each_efi_memory_desc_in_map(m, md)				   \
-	for ((md) = (m)->map;						   \
-	     (md) && ((void *)(md) + (m)->desc_size) <= (m)->map_end;	   \
-	     (md) = (void *)(md) + (m)->desc_size)
-
-/**
- * for_each_efi_memory_desc - iterate over descriptors in efi.memmap
- * @md: the efi_memory_desc_t * iterator
- *
- * Once the loop finishes @md must not be accessed.
- */
-#define for_each_efi_memory_desc(md) \
-	for_each_efi_memory_desc_in_map(&efi.memmap, md)
-
-
-
-typedef void (*efi_element_handler_t)(const char *source,
-				      const void *element_data,
-				      size_t element_size);
-
-
-/*
- * We play games with efi_enabled so that the compiler will, if
- * possible, remove EFI-related code altogether.
- */
-#define EFI_BOOT		0	/* Were we booted from EFI? */
-#define EFI_CONFIG_TABLES	2	/* Can we use EFI config tables? */
-#define EFI_RUNTIME_SERVICES	3	/* Can we use runtime services? */
-#define EFI_MEMMAP		4	/* Can we use EFI memory map? */
-#define EFI_64BIT		5	/* Is the firmware 64-bit? */
-#define EFI_PARAVIRT		6	/* Access is via a paravirt interface */
-#define EFI_ARCH_1		7	/* First arch-specific bit */
-#define EFI_DBG			8	/* Print additional debug info at runtime */
-#define EFI_MEM_ATTR		9	/* Did firmware publish an EFI_MEMORY_ATTRIBUTES table? */
-#define EFI_MEM_NO_SOFT_RESERVE	10	/* Is the kernel configured to ignore soft reservations? */
-#define EFI_PRESERVE_BS_REGIONS	11	/* Are EFI boot-services memory segments available? */
-
-
-
-/*
- * Variable Attributes
- */
-#define EFI_VARIABLE_NON_VOLATILE       0x0000000000000001
-#define EFI_VARIABLE_BOOTSERVICE_ACCESS 0x0000000000000002
-#define EFI_VARIABLE_RUNTIME_ACCESS     0x0000000000000004
-#define EFI_VARIABLE_HARDWARE_ERROR_RECORD 0x0000000000000008
-#define EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS 0x0000000000000010
-#define EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS 0x0000000000000020
-#define EFI_VARIABLE_APPEND_WRITE	0x0000000000000040
-
-#define EFI_VARIABLE_MASK	(EFI_VARIABLE_NON_VOLATILE | \
-				EFI_VARIABLE_BOOTSERVICE_ACCESS | \
-				EFI_VARIABLE_RUNTIME_ACCESS | \
-				EFI_VARIABLE_HARDWARE_ERROR_RECORD | \
-				EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS | \
-				EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS | \
-				EFI_VARIABLE_APPEND_WRITE)
-/*
- * Length of a GUID string (strlen("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"))
- * not including trailing NUL
- */
-#define EFI_VARIABLE_GUID_LEN	UUID_STRING_LEN
-
-/*
- * EFI Device Path information
- */
-#define EFI_DEV_HW			0x01
-#define  EFI_DEV_PCI				 1
-#define  EFI_DEV_PCCARD				 2
-#define  EFI_DEV_MEM_MAPPED			 3
-#define  EFI_DEV_VENDOR				 4
-#define  EFI_DEV_CONTROLLER			 5
-#define EFI_DEV_ACPI			0x02
-#define   EFI_DEV_BASIC_ACPI			 1
-#define   EFI_DEV_EXPANDED_ACPI			 2
-#define EFI_DEV_MSG			0x03
-#define   EFI_DEV_MSG_ATAPI			 1
-#define   EFI_DEV_MSG_SCSI			 2
-#define   EFI_DEV_MSG_FC			 3
-#define   EFI_DEV_MSG_1394			 4
-#define   EFI_DEV_MSG_USB			 5
-#define   EFI_DEV_MSG_USB_CLASS			15
-#define   EFI_DEV_MSG_I20			 6
-#define   EFI_DEV_MSG_MAC			11
-#define   EFI_DEV_MSG_IPV4			12
-#define   EFI_DEV_MSG_IPV6			13
-#define   EFI_DEV_MSG_INFINIBAND		 9
-#define   EFI_DEV_MSG_UART			14
-#define   EFI_DEV_MSG_VENDOR			10
-#define EFI_DEV_MEDIA			0x04
-#define   EFI_DEV_MEDIA_HARD_DRIVE		 1
-#define   EFI_DEV_MEDIA_CDROM			 2
-#define   EFI_DEV_MEDIA_VENDOR			 3
-#define   EFI_DEV_MEDIA_FILE			 4
-#define   EFI_DEV_MEDIA_PROTOCOL		 5
-#define   EFI_DEV_MEDIA_REL_OFFSET		 8
-#define EFI_DEV_BIOS_BOOT		0x05
-#define EFI_DEV_END_PATH		0x7F
-#define EFI_DEV_END_PATH2		0xFF
-#define   EFI_DEV_END_INSTANCE			0x01
-#define   EFI_DEV_END_ENTIRE			0xFF
-
-struct efi_generic_dev_path {
-	u8				type;
-	u8				sub_type;
-	u16				length;
-} __packed;
-
-struct efi_acpi_dev_path {
-	struct efi_generic_dev_path	header;
-	u32				hid;
-	u32				uid;
-} __packed;
-
-struct efi_pci_dev_path {
-	struct efi_generic_dev_path	header;
-	u8				fn;
-	u8				dev;
-} __packed;
-
-struct efi_vendor_dev_path {
-	struct efi_generic_dev_path	header;
-	efi_guid_t			vendorguid;
-	u8				vendordata[];
-} __packed;
-
-struct efi_rel_offset_dev_path {
-	struct efi_generic_dev_path	header;
-	u32				reserved;
-	u64				starting_offset;
-	u64				ending_offset;
-} __packed;
-
-struct efi_mem_mapped_dev_path {
-	struct efi_generic_dev_path	header;
-	u32				memory_type;
-	u64				starting_addr;
-	u64				ending_addr;
-} __packed;
-
-struct efi_file_path_dev_path {
-	struct efi_generic_dev_path	header;
-	efi_char16_t			filename[];
-} __packed;
-
-struct efi_dev_path {
-	union {
-		struct efi_generic_dev_path	header;
-		struct efi_acpi_dev_path	acpi;
-		struct efi_pci_dev_path		pci;
-		struct efi_vendor_dev_path	vendor;
-		struct efi_rel_offset_dev_path	rel_offset;
-	};
-} __packed;
-
-
-/*
- * EFI Variable support.
- *
- * Different firmware drivers can expose their EFI-like variables using
- * the following.
- */
-
-struct efivar_operations {
-	efi_get_variable_t *get_variable;
-	efi_get_next_variable_t *get_next_variable;
-	efi_set_variable_t *set_variable;
-	efi_set_variable_t *set_variable_nonblocking;
-	efi_query_variable_store_t *query_variable_store;
-	efi_query_variable_info_t *query_variable_info;
-};
-
-struct efivars {
-	struct kset *kset;
-	const struct efivar_operations *ops;
-};
-
-
-/*
- * There is no actual upper limit specified for the variable name size.
- *
- * This limit exists only for practical purposes, since name conversions
- * are bounds-checked and name data is occasionally stored in-line.
- */
-#define EFI_VAR_NAME_LEN	1024
-
-
-enum efi_secureboot_mode {
-	efi_secureboot_mode_unset,
-	efi_secureboot_mode_unknown,
-	efi_secureboot_mode_disabled,
-	efi_secureboot_mode_enabled,
-};
-
-
-
-#define EFI_RANDOM_SEED_SIZE		32U // BLAKE2S_HASH_SIZE
-
-struct linux_efi_random_seed {
-	u32	size;
-	u8	bits[];
-};
-
-struct linux_efi_tpm_eventlog {
-	u32	size;
-	u32	final_events_preboot_size;
-	u8	version;
-	u8	log[];
-};
-
-
-struct efi_tcg2_final_events_table {
-	u64 version;
-	u64 nr_events;
-	u8 events[];
-};
-/*
- * efi_runtime_service() function identifiers.
- * "NONE" is used by efi_recover_from_page_fault() to check if the page
- * fault happened while executing an efi runtime service.
- */
-enum efi_rts_ids {
-	EFI_NONE,
-	EFI_GET_TIME,
-	EFI_SET_TIME,
-	EFI_GET_WAKEUP_TIME,
-	EFI_SET_WAKEUP_TIME,
-	EFI_GET_VARIABLE,
-	EFI_GET_NEXT_VARIABLE,
-	EFI_SET_VARIABLE,
-	EFI_QUERY_VARIABLE_INFO,
-	EFI_GET_NEXT_HIGH_MONO_COUNT,
-	EFI_RESET_SYSTEM,
-	EFI_UPDATE_CAPSULE,
-	EFI_QUERY_CAPSULE_CAPS,
-	EFI_ACPI_PRM_HANDLER,
-};
-
-union efi_rts_args;
-
-#define EFI_MEMRESERVE_COUNT(size) (((size) - sizeof(struct linux_efi_memreserve)) \
-	/ sizeof_field(struct linux_efi_memreserve, entry[0]))
-
-
-/*
- * The LINUX_EFI_MOK_VARIABLE_TABLE_GUID config table can be provided
- * to the kernel by an EFI boot loader. The table contains a packed
- * sequence of these entries, one for each named MOK variable.
- * The sequence is terminated by an entry with a completely NULL
- * name and 0 data size.
- */
-struct efi_mokvar_table_entry {
-	char name[256];
-	u64 data_size;
-	u8 data[];
-} __attribute((packed));
-
-struct linux_efi_coco_secret_area {
-	u64	base_pa;
-	u64	size;
-};
-
-struct linux_efi_initrd {
-	unsigned long	base;
-	unsigned long	size;
-};
-
-/* Header of a populated EFI secret area */
-#define EFI_SECRET_TABLE_HEADER_GUID	EFI_GUID(0x1e74f542, 0x71dd, 0x4d66,  0x96, 0x3e, 0xef, 0x42, 0x87, 0xff, 0x17, 0x3b)
-
-/*
- * efivar ops event type
- */
-#define EFIVAR_OPS_RDONLY 0
-#define EFIVAR_OPS_RDWR 1
-
-#endif /* _LINUX_EFI_H */
+#endif

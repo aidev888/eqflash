@@ -1,3 +1,5 @@
+// full copy from linux/compiler_attributes.h
+
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __LINUX_COMPILER_ATTRIBUTES_H
 #define __LINUX_COMPILER_ATTRIBUTES_H
@@ -43,10 +45,6 @@
  */
 #define __alloc_size__(x, ...)		__attribute__((__alloc_size__(x, ## __VA_ARGS__)))
 
-/* inline is defined in compiler_types.h */
-#ifndef __LINUX_COMPILER_TYPES_H
-#error "Please do not include <linux/compiler_attributes.h> directly, include <linux/compiler.h> instead."
-#endif
 /*
  * Note: users of __always_inline currently do not write "inline" themselves,
  * which seems to be required by gcc to apply the attribute according
@@ -110,7 +108,6 @@
 # define __diagnose_as(builtin...)
 #endif
 
-#if 0 // TODO
 /*
  * Don't. Just don't. See commit 771c035372a0 ("deprecate the '__deprecated'
  * attribute warnings entirely and for good") for more information.
@@ -122,7 +119,6 @@
  * clang: https://clang.llvm.org/docs/AttributeReference.html#deprecated
  */
 #define __deprecated
-#endif
 
 /*
  * Optional: not supported by clang

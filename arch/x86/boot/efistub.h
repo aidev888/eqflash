@@ -3,36 +3,12 @@
 #ifndef _DRIVERS_FIRMWARE_EFI_EFISTUB_H
 #define _DRIVERS_FIRMWARE_EFI_EFISTUB_H
 
+#include <linux/compiler.h>
 #include <linux/efi.h>
 #include <linux/types.h>
 
-/*
- * __init annotations should not be used in the EFI stub, since the code is
- * either included in the decompressor (x86, ARM) where they have no effect,
- * or the whole stub is __init annotated at the section level (arm64), by
- * renaming the sections, in which case the __init annotation will be
- * redundant, and will result in section names like .init.init.text, and our
- * linker script does not expect that.
- */
-#undef __init
-
-/*
- * Allow the platform to override the allocation granularity: this allows
- * systems that have the capability to run with a larger page size to deal
- * with the allocations for initrd and fdt more efficiently.
- */
-#ifndef EFI_ALLOC_ALIGN
-#define EFI_ALLOC_ALIGN		EFI_PAGE_SIZE
-#endif
-
-#ifndef EFI_ALLOC_LIMIT
-#define EFI_ALLOC_LIMIT		ULONG_MAX
-#endif
-
-extern const efi_system_table_t *efi_system_table;
-
-efi_status_t __efiapi efi_pe_entry(efi_handle_t handle,
-				   efi_system_table_t *sys_table_arg);
+typedef union efi_dxe_services_table efi_dxe_services_table_t;
+extern const efi_dxe_services_table_t *efi_dxe_table;
 
 #define efi_is_native()			(true)
 #define efi_table_attr(inst, attr)	(inst)->attr
@@ -42,26 +18,34 @@ efi_status_t __efiapi efi_pe_entry(efi_handle_t handle,
 	__typeof__(inst) __inst = (inst);			\
 	efi_fn_call(__inst, func, __inst, ##__VA_ARGS__);	\
 })
-
 #define efi_bs_call(func, ...) \
 	efi_fn_call(efi_table_attr(efi_system_table, boottime), func, ##__VA_ARGS__)
+#define efi_rt_call(func, ...) \
+	efi_fn_call(efi_table_attr(efi_system_table, runtime), func, ##__VA_ARGS__)
+#define efi_dxe_call(func, ...) \
+	efi_fn_call(efi_dxe_table, func, ##__VA_ARGS__)
 
+#define get_efi_var(name, vendor, ...)				\
+	efi_rt_call(get_variable, (efi_char16_t *)(name),	\
+		    (efi_guid_t *)(vendor), __VA_ARGS__)
 
-union efi_simple_text_output_protocol {
-	struct {
-		void *reset;
-		efi_status_t (__efiapi *output_string)(efi_simple_text_output_protocol_t *,
-						       efi_char16_t *);
-		void *test_string;
-	};
-	struct {
-		u32 reset;
-		u32 output_string;
-		u32 test_string;
-	} mixed_mode;
-};
+#define set_efi_var(name, vendor, ...)				\
+	efi_rt_call(set_variable, (efi_char16_t *)(name),	\
+		    (efi_guid_t *)(vendor), __VA_ARGS__)
 
-typedef union efi_simple_text_output_protocol efi_simple_text_output_protocol_t;
+#define efi_get_handle_at(array, idx)					\
+	(efi_is_native() ? (array)[idx] 				\
+		: (efi_handle_t)(unsigned long)((u32 *)(array))[idx])
+
+#define efi_get_handle_num(size)					\
+	((size) / (efi_is_native() ? sizeof(efi_handle_t) : sizeof(u32)))
+
+#define for_each_efi_handle(handle, array, num)				\
+	for (int __i = 0; __i < (num) &&				\
+		((handle = efi_get_handle_at((array), __i)) || true);	\
+	     __i++)
+
+typedef struct efi_generic_dev_path efi_device_path_protocol_t;
 
 typedef void *efi_event_t;
 /* Note that notifications won't work in mixed mode */
@@ -73,11 +57,6 @@ typedef enum {
 	EfiTimerRelative
 } EFI_TIMER_DELAY;
 
-typedef struct efi_generic_dev_path efi_device_path_protocol_t;
-
-/*
- * EFI Boot Services table
- */
 union efi_boot_services {
 	struct {
 		efi_table_hdr_t hdr;
@@ -155,54 +134,90 @@ union efi_boot_services {
 		void (__efiapi *set_mem)(void *, unsigned long, unsigned char);
 		void *create_event_ex;
 	};
-	struct {
-		efi_table_hdr_t hdr;
-		u32 raise_tpl;
-		u32 restore_tpl;
-		u32 allocate_pages;
-		u32 free_pages;
-		u32 get_memory_map;
-		u32 allocate_pool;
-		u32 free_pool;
-		u32 create_event;
-		u32 set_timer;
-		u32 wait_for_event;
-		u32 signal_event;
-		u32 close_event;
-		u32 check_event;
-		u32 install_protocol_interface;
-		u32 reinstall_protocol_interface;
-		u32 uninstall_protocol_interface;
-		u32 handle_protocol;
-		u32 __reserved;
-		u32 register_protocol_notify;
-		u32 locate_handle;
-		u32 locate_device_path;
-		u32 install_configuration_table;
-		u32 load_image;
-		u32 start_image;
-		u32 exit;
-		u32 unload_image;
-		u32 exit_boot_services;
-		u32 get_next_monotonic_count;
-		u32 stall;
-		u32 set_watchdog_timer;
-		u32 connect_controller;
-		u32 disconnect_controller;
-		u32 open_protocol;
-		u32 close_protocol;
-		u32 open_protocol_information;
-		u32 protocols_per_handle;
-		u32 locate_handle_buffer;
-		u32 locate_protocol;
-		u32 install_multiple_protocol_interfaces;
-		u32 uninstall_multiple_protocol_interfaces;
-		u32 calculate_crc32;
-		u32 copy_mem;
-		u32 set_mem;
-		u32 create_event_ex;
-	} mixed_mode;
 };
 
+typedef enum {
+	EfiGcdMemoryTypeNonExistent,
+	EfiGcdMemoryTypeReserved,
+	EfiGcdMemoryTypeSystemMemory,
+	EfiGcdMemoryTypeMemoryMappedIo,
+	EfiGcdMemoryTypePersistent,
+	EfiGcdMemoryTypeMoreReliable,
+	EfiGcdMemoryTypeMaximum
+} efi_gcd_memory_type_t;
+
+typedef struct {
+	efi_physical_addr_t base_address;
+	u64 length;
+	u64 capabilities;
+	u64 attributes;
+	efi_gcd_memory_type_t gcd_memory_type;
+	void *image_handle;
+	void *device_handle;
+} efi_gcd_memory_space_desc_t;
+
+union efi_dxe_services_table {
+	struct {
+		efi_table_hdr_t hdr;
+		void *add_memory_space;
+		void *allocate_memory_space;
+		void *free_memory_space;
+		void *remove_memory_space;
+		efi_status_t (__efiapi *get_memory_space_descriptor)(efi_physical_addr_t,
+								     efi_gcd_memory_space_desc_t *);
+		efi_status_t (__efiapi *set_memory_space_attributes)(efi_physical_addr_t,
+								     u64, u64);
+		void *get_memory_space_map;
+		void *add_io_space;
+		void *allocate_io_space;
+		void *free_io_space;
+		void *remove_io_space;
+		void *get_io_space_descriptor;
+		void *get_io_space_map;
+		void *dispatch;
+		void *schedule;
+		void *trust;
+		void *process_firmware_volume;
+		void *set_memory_space_capabilities;
+	};
+};
+
+typedef union efi_memory_attribute_protocol efi_memory_attribute_protocol_t;
+
+union efi_memory_attribute_protocol {
+	struct {
+		efi_status_t (__efiapi *get_memory_attributes)(
+			efi_memory_attribute_protocol_t *, efi_physical_addr_t, u64, u64 *);
+
+		efi_status_t (__efiapi *set_memory_attributes)(
+			efi_memory_attribute_protocol_t *, efi_physical_addr_t, u64, u64);
+
+		efi_status_t (__efiapi *clear_memory_attributes)(
+			efi_memory_attribute_protocol_t *, efi_physical_addr_t, u64, u64);
+	};
+};
+
+typedef struct {
+	u16 scan_code;
+	efi_char16_t unicode_char;
+} efi_input_key_t;
+
+union efi_simple_text_input_protocol {
+	struct {
+		void *reset;
+		efi_status_t (__efiapi *read_keystroke)(efi_simple_text_input_protocol_t *,
+							efi_input_key_t *);
+		efi_event_t wait_for_key;
+	};
+};
+
+union efi_simple_text_output_protocol {
+	struct {
+		void *reset;
+		efi_status_t (__efiapi *output_string)(efi_simple_text_output_protocol_t *,
+						       efi_char16_t *);
+		void *test_string;
+	};
+};
 
 #endif

@@ -1,3 +1,5 @@
+// full copy
+
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_BUILD_BUG_H
 #define _LINUX_BUILD_BUG_H
@@ -32,7 +34,8 @@
 /**
  * BUILD_BUG_ON_MSG - break compile if a condition is true & emit supplied
  *		      error message.
- * @condition: the condition which the compiler should know is false.
+ * @cond: the condition which the compiler should know is false.
+ * @msg: build-time error message
  *
  * See BUILD_BUG_ON for description.
  */
@@ -60,6 +63,7 @@
 
 /**
  * static_assert - check integer constant expression at build time
+ * @expr: expression to be checked
  *
  * static_assert() is a wrapper for the C11 _Static_assert, with a
  * little macro magic to make the message optional (defaulting to the

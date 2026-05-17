@@ -1,9 +1,14 @@
+// full copy
+
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __LINUX_COMPILER_TYPES_H
 #error "Please do not include <linux/compiler-clang.h> directly, include <linux/compiler.h> instead."
 #endif
 
 /* Compiler specific definitions for Clang compiler */
+#define CLANG_VERSION (__clang_major__ * 10000		\
+		     + __clang_minor__ * 100	\
+		     + __clang_patchlevel__)
 
 /*
  * Clang prior to 17 is being silly and considers many __cleanup() variables
@@ -65,7 +70,7 @@
 #define __HAVE_BUILTIN_BSWAP64__
 #define __HAVE_BUILTIN_BSWAP16__
 #else
-#error "Not support"
+#error "TODO"
 #endif
 
 #if __has_feature(undefined_behavior_sanitizer)
@@ -117,11 +122,6 @@
 # define __noscs	__attribute__((__no_sanitize__("shadow-call-stack")))
 #endif
 
-#if __has_feature(kcfi)
-/* Disable CFI checking inside a function. */
-#define __nocfi		__attribute__((__no_sanitize__("kcfi")))
-#endif
-
 /*
  * Turn individual warnings and errors on and off locally, depending
  * on version.
@@ -152,6 +152,7 @@
  */
 #define ASM_INPUT_G "ir"
 #define ASM_INPUT_RM "r"
+#define ASM_OUTPUT_RM "=r"
 
 /*
  * Declare compiler support for __typeof_unqual__() operator.
@@ -159,6 +160,20 @@
  * Bindgen uses LLVM even if our C compiler is GCC, so we cannot
  * rely on the auto-detected CONFIG_CC_HAS_TYPEOF_UNQUAL.
  */
-#define CC_HAS_TYPEOF_UNQUAL (__clang_major__ >= 19)
+#define CC_HAS_TYPEOF_UNQUAL (__clang_major__ > 19 || (__clang_major__ == 19 && __clang_minor__ > 0))
 
-#define __inline_maybe_unused __maybe_unused
+#if CLANG_VERSION >= 190100
+#define CONFIG_CC_HAS_ASSUME 1
+#endif
+
+#if CLANG_VERSION >= 200100
+#define CONFIG_CC_HAS_COUNTED_BY 1
+#endif
+
+#if CLANG_VERSION >= 220100
+#define CONFIG_CC_HAS_COUNTED_BY_PTR 1
+#endif
+
+#if CLANG_VERSION < 220100
+#define CONFIG_CC_HAS_BROKEN_COUNTED_BY_REF 1
+#endif

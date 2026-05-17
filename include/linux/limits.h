@@ -1,29 +1,24 @@
+// full copy
+
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_LIMITS_H
 #define _LINUX_LIMITS_H
 
-// #include <uapi/linux/limits.h> // TODO
 #include <linux/types.h>
-#include <vdso/limits.h>
+#include <limits.h>
+#include <stdint.h>
 
-#define SIZE_MAX	(~(size_t)0)
-#define SSIZE_MAX	((ssize_t)(SIZE_MAX >> 1))
-#define PHYS_ADDR_MAX	(~(phys_addr_t)0)
-
-#define RESOURCE_SIZE_MAX	((resource_size_t)~0)
-
-#define U8_MAX		((u8)~0U)
-#define S8_MAX		((s8)(U8_MAX >> 1))
-#define S8_MIN		((s8)(-S8_MAX - 1))
-#define U16_MAX		((u16)~0U)
-#define S16_MAX		((s16)(U16_MAX >> 1))
-#define S16_MIN		((s16)(-S16_MAX - 1))
-#define U32_MAX		((u32)~0U)
-#define U32_MIN		((u32)0)
-#define S32_MAX		((s32)(U32_MAX >> 1))
-#define S32_MIN		((s32)(-S32_MAX - 1))
-#define U64_MAX		((u64)~0ULL)
-#define S64_MAX		((s64)(U64_MAX >> 1))
-#define S64_MIN		((s64)(-S64_MAX - 1))
+#define U8_MAX		UINT8_MAX
+#define S8_MAX		INT8_MAX
+#define S8_MIN		INT8_MIN
+#define U16_MAX		UINT16_MAX
+#define S16_MAX		INT16_MAX
+#define S16_MIN		INT16_MIN
+#define U32_MAX		UINT32_MAX
+#define S32_MAX		INT32_MAX
+#define S32_MIN		INT32_MIN
+#define U64_MAX		UINT64_MAX
+#define S64_MAX		INT64_MAX
+#define S64_MIN		INT64_MIN
 
 #endif /* _LINUX_LIMITS_H */
