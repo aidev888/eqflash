@@ -37,7 +37,10 @@ SECTIONS
 	. = ALIGN(EFI_PE_SALIGN);
 	PROVIDE(_efi_pe_virtual_end = .);
 
-	.efi_pe_header : {
+	.dynbss		: { *(.dynbss) }
+	ASSERT(SIZEOF(.dynbss) == 0, "Unexpected .dynbss")
+
+	.efi_pe_header ALIGN(EFI_PE_FALIGN) : {
 		KEEP(*(.efi_pe_header0))
 		LONG(ALIGN(SIZEOF(.text), EFI_PE_FALIGN))
 		LONG(ALIGN(SIZEOF(.data), EFI_PE_FALIGN))
@@ -68,6 +71,9 @@ SECTIONS
 	.gnu.hash       : { *(.gnu.hash) }
 	.dynsym         : { *(.dynsym) }
 	.dynstr         : { *(.dynstr) }
+	.gnu.version    : { *(.gnu.version) }
+	.gnu.version_d  : { *(.gnu.version_d) }
+	.gnu.version_r  : { *(.gnu.version_r) }
 	.eh_frame       : ONLY_IF_RO { KEEP (*(.eh_frame)) *(.eh_frame.*) }
 	.eh_frame       : ONLY_IF_RW { KEEP (*(.eh_frame)) *(.eh_frame.*) }
 	.dynamic        : { *(.dynamic) }
@@ -130,6 +136,9 @@ SECTIONS
 	.debug_str_offsets 0 : { *(.debug_str_offsets) }
 	.debug_sup      0 : { *(.debug_sup) }
 	.gnu.attributes 0 : { KEEP (*(.gnu.attributes)) }
+	.symtab		0 : { *(.symtab) }
+	.strtab		0 : { *(.strtab) }
+	.shstrtab	0 : { *(.shstrtab) }
 
 	/DISCARD/ : { *(.note.GNU-stack) *(.gnu_debuglink) *(.gnu.lto_*) }
 }

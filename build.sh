@@ -2,7 +2,7 @@
 
 CPPFLAGS=(-nostdinc -I./arch/x86/include -I./include -include ./include/linux/kconfig.h -include ./include/linux/compiler_types.h -D__KERNEL__)
 
-CFLAGS=(-Wno-unused-parameter)
+CFLAGS=(-Wno-unused-parameter -g3)
 LDFLAGS=(-O2 --orphan-handling=error)
 
 set -x
@@ -12,7 +12,7 @@ clang-me "${CPPFLAGS[@]}" "${CFLAGS[@]}" -fshort-wchar -fpie arch/x86/boot/efi/e
 clang-me "${CPPFLAGS[@]}" "${CFLAGS[@]}" -D__ASSEMBLY__ arch/x86/boot/efi/efi_pe.lds.S -E -o arch/x86/boot/efi/efi_pe.lds
 #objcopy --set-section-flags .rodata.str2.2=alloc --set-section-flags .rodata.cst16=alloc arch/x86/boot/efi/entry.o arch/x86/boot/efi/entry.o
 
-if true; then
+if false; then
 	ld.lld "${LDFLAGS[@]}" -pie --no-dynamic-linker -T arch/x86/boot/efi/efi_pe.lds arch/x86/boot/efi/efi_pe_header.o arch/x86/boot/efi/entry.o -o arch/x86/boot/efi/efi_pe.elf
 	llvm-objcopy -O binary -j .text arch/x86/boot/efi/efi_pe.elf arch/x86/boot/efi/efi_pe_text.bin
 	llvm-objcopy -O binary -j .data arch/x86/boot/efi/efi_pe.elf arch/x86/boot/efi/efi_pe_data.bin
