@@ -20,13 +20,14 @@ SECTIONS
 		*(.text.hot .text.hot.*)
 		*(SORT(.text.sorted.*))
 		*(.text .text.*)
+		_rodata_start = .;
 		*(.rodata .rodata.*)
-	}
+	} = 0x0
 	ASSERT(ADDR(.text) == EFI_PE_SALIGN, "Unexpected sections detected!")
 
 	.data ALIGN(EFI_PE_SALIGN) : {
 		*(.data .data.*)
-	}
+	} = 0x0
 
 	.bss ALIGN(EFI_PE_SALIGN) : {
 		*(.bss .bss.*)
